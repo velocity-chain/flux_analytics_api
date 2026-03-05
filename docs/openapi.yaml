@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: {{info.name}} {{service.name}} API
+  title: Velocity Chain analytics API
   description: |
-    A Flask + MongoDB API for the {{service.name}} service.
+    A Flask + MongoDB API for the analytics service.
     
     ## Authentication
     All endpoints (except `/dev-login` and `/metrics`) require JWT authentication via the `Authorization` header:
@@ -13,13 +13,13 @@ info:
     For local development, obtain a token from the `/dev-login` endpoint.
   version: 0.1.0
   contact:
-    name: {{org.name}}
-    email: {{org.email}}
+    name: Velocity Chain
+    email: grahampaasch@gmail.com
   license:
     name: Apache-2.0
 
 servers:
-  - url: http://localhost:{{repo.port}}
+  - url: http://localhost:8397
     description: Local development server
 
 tags:
@@ -29,22 +29,18 @@ tags:
     description: Configuration endpoints
   - name: Metrics
     description: Monitoring endpoints
-{% for domain in service.data_domains.controls -%}
-{{ '  ' -}}
-- name: {{domain}}
-    description: {{domain}} operations (create, read, update)
-{% endfor -%}
-{% for domain in service.data_domains.creates -%}
-{{ '  ' -}}
-- name: {{domain}}
-    description: {{domain}} operations (create, read)
-{% endfor -%}
-{% for domain in service.data_domains.consumes -%}
-{{ '  ' -}}
-- name: {{domain}}
-    description: {{domain}} operations (read-only)
-{% endfor -%}
-
+  - name: Analytics
+    description: Analytics operations (create, read, update)
+  - name: Organization
+    description: Organization operations (read-only)
+  - name: Supplier
+    description: Supplier operations (read-only)
+  - name: Inventory
+    description: Inventory operations (read-only)
+  - name: Shipment
+    description: Shipment operations (read-only)
+  - name: Optimization
+    description: Optimization operations (read-only)
 paths:
   /dev-login:
     post:
@@ -152,15 +148,13 @@ paths:
               schema:
                 type: string
 
-{% for domain in service.data_domains.controls -%}
-{{ '  ' -}}
-/api/{{domain}}:
+  /api/Analytics:
     get:
       tags:
-        - {{domain}}
-      summary: Get all {{domain}} documents
-      description: Retrieve infinite scroll batch of sorted, filtered {{domain}} documents
-      operationId: get{{domain}}s
+        - Analytics
+      summary: Get all Analytics documents
+      description: Retrieve infinite scroll batch of sorted, filtered Analytics documents
+      operationId: getAnalyticss
       security:
         - bearerAuth: []
       parameters:
@@ -170,7 +164,7 @@ paths:
           description: Optional name filter (supports partial matches, case-insensitive)
           schema:
             type: string
-            example: my-{{domain}}
+            example: my-Analytics
         - name: after_id
           in: query
           required: false
@@ -242,10 +236,10 @@ paths:
           $ref: '#/components/responses/InternalError'
     post:
       tags:
-        - {{domain}}
-      summary: Create a new {{domain}} document
-      description: Create a new {{domain}} document (requires staff or admin role)
-      operationId: create{{domain}}
+        - Analytics
+      summary: Create a new Analytics document
+      description: Create a new Analytics document (requires staff or admin role)
+      operationId: createAnalytics
       security:
         - bearerAuth: []
       requestBody:
@@ -253,10 +247,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/{{domain}}Input'
+              $ref: '#/components/schemas/AnalyticsInput'
       responses:
         '201':
-          description: {{domain}} created successfully
+          description: Analytics created successfully
           content:
             application/json:
               schema:
@@ -272,31 +266,31 @@ paths:
         '500':
           $ref: '#/components/responses/InternalError'
 
-  /api/{{domain}}/{{'{'}}{{domain}}Id{{'}'}}:
+  /api/Analytics/{AnalyticsId}:
     get:
       tags:
-        - {{domain}}
-      summary: Get {{domain}} by {{domain}}Id
-      description: Retrieve a specific {{domain}} document by its {{domain}}Id
-      operationId: get{{domain}}
+        - Analytics
+      summary: Get Analytics by AnalyticsId
+      description: Retrieve a specific Analytics document by its AnalyticsId
+      operationId: getAnalytics
       security:
         - bearerAuth: []
       parameters:
-        - name: {{domain}}Id
+        - name: AnalyticsId
           in: path
           required: true
-          description: The {{domain}} ID (MongoDB ObjectId)
+          description: The Analytics ID (MongoDB ObjectId)
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
             example: 507f1f77bcf86cd799439011
       responses:
         '200':
-          description: Successfully retrieved {{domain}}
+          description: Successfully retrieved Analytics
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/{{domain}}'
+                $ref: '#/components/schemas/Analytics'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -305,17 +299,17 @@ paths:
           $ref: '#/components/responses/InternalError'
     patch:
       tags:
-        - {{domain}}
-      summary: Update {{domain}} document
-      description: Update a {{domain}} document (requires admin role). Cannot update _id, created, or saved fields.
-      operationId: update{{domain}}
+        - Analytics
+      summary: Update Analytics document
+      description: Update a Analytics document (requires admin role). Cannot update _id, created, or saved fields.
+      operationId: updateAnalytics
       security:
         - bearerAuth: []
       parameters:
-        - name: {{domain}}Id
+        - name: AnalyticsId
           in: path
           required: true
-          description: The {{domain}} ID (MongoDB ObjectId)
+          description: The Analytics ID (MongoDB ObjectId)
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
@@ -325,14 +319,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/{{domain}}Update'
+              $ref: '#/components/schemas/AnalyticsUpdate'
       responses:
         '200':
-          description: {{domain}} updated successfully
+          description: Analytics updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/{{domain}}'
+                $ref: '#/components/schemas/Analytics'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -341,17 +335,13 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
-{% endfor -%}
-
-{% for domain in service.data_domains.creates -%}
-{{ '  ' -}}
-/api/{{domain}}:
+  /api/Organization:
     get:
       tags:
-        - {{domain}}
-      summary: Get all {{domain}} documents
-      description: Retrieve infinite scroll batch of sorted, filtered {{domain}} documents
-      operationId: get{{domain}}s
+        - Organization
+      summary: Get all Organization documents
+      description: Retrieve infinite scroll batch of sorted, filtered Organization documents (read-only)
+      operationId: getOrganizations
       security:
         - bearerAuth: []
       parameters:
@@ -361,160 +351,7 @@ paths:
           description: Optional name filter (supports partial matches, case-insensitive)
           schema:
             type: string
-            example: my-{{domain}}
-        - name: after_id
-          in: query
-          required: false
-          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-        - name: limit
-          in: query
-          required: false
-          description: Items per page (max 100)
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 10
-            example: 10
-        - name: sort_by
-          in: query
-          required: false
-          description: Field to sort by (name, description, created.at_time)
-          schema:
-            type: string
-            default: name
-            example: name
-        - name: order
-          in: query
-          required: false
-          description: Sort order
-          schema:
-            type: string
-            enum: [asc, desc]
-            default: asc
-            example: asc
-      responses:
-        '200':
-          description: Successfully retrieved {{domain}}s
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - items
-                  - limit
-                  - has_more
-                  - next_cursor
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/{{domain}}'
-                  limit:
-                    type: integer
-                    example: 10
-                  has_more:
-                    type: boolean
-                    example: true
-                  next_cursor:
-                    type: string
-                    nullable: true
-                    pattern: '^[0-9a-fA-F]{24}$'
-                    example: 507f1f77bcf86cd799439011
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-    post:
-      tags:
-        - {{domain}}
-      summary: Create a new {{domain}} document
-      description: Create a new {{domain}} document (requires staff or admin role)
-      operationId: create{{domain}}
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/{{domain}}Input'
-      responses:
-        '201':
-          description: {{domain}} created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _id:
-                    type: string
-                    pattern: '^[0-9a-fA-F]{24}$'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalError'
-
-  /api/{{domain}}/{{'{'}}{{domain}}Id{{'}'}}:
-    get:
-      tags:
-        - {{domain}}
-      summary: Get {{domain}} by {{domain}}Id
-      description: Retrieve a specific {{domain}} document by its {{domain}}Id
-      operationId: get{{domain}}
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: {{domain}}Id
-          in: path
-          required: true
-          description: The {{domain}} ID (MongoDB ObjectId)
-          schema:
-            type: string
-            pattern: '^[0-9a-fA-F]{24}$'
-            example: 507f1f77bcf86cd799439011
-      responses:
-        '200':
-          description: Successfully retrieved {{domain}}
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/{{domain}}'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
-{% endfor -%}
-
-{% for domain in service.data_domains.consumes -%}
-{{ '  ' -}}
-  /api/{{domain}}:
-    get:
-      tags:
-        - {{domain}}
-      summary: Get all {{domain}} documents
-      description: Retrieve infinite scroll batch of sorted, filtered {{domain}} documents (read-only)
-      operationId: get{{domain}}s
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: name
-          in: query
-          required: false
-          description: Optional name filter (supports partial matches, case-insensitive)
-          schema:
-            type: string
-            example: my-{{domain}}
+            example: my-Organization
         - name: after_id
           in: query
           required: false
@@ -552,7 +389,7 @@ paths:
             example: asc
       responses:
         '200':
-          description: Successfully retrieved {{domain}}s
+          description: Successfully retrieved Organizations
           content:
             application/json:
               schema:
@@ -566,7 +403,7 @@ paths:
                   items:
                     type: array
                     items:
-                      $ref: '#/components/schemas/{{domain}}'
+                      $ref: '#/components/schemas/Organization'
                   limit:
                     type: integer
                     example: 10
@@ -584,43 +421,505 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalError'
-{% endfor -%}
-
-{% for domain in service.data_domains.consumes -%}
-{{ '  ' -}}
-/api/{{domain}}/{{ '{'}}{{domain}}Id}:
+  /api/Supplier:
     get:
       tags:
-        - {{domain}}
-      summary: Get {{domain}} by {{domain}}Id
-      description: Retrieve a specific {{domain}} document by its {{domain}}Id (read-only)
-      operationId: get{{domain}}
+        - Supplier
+      summary: Get all Supplier documents
+      description: Retrieve infinite scroll batch of sorted, filtered Supplier documents (read-only)
+      operationId: getSuppliers
       security:
         - bearerAuth: []
       parameters:
-        - name: {{domain}}Id
+        - name: name
+          in: query
+          required: false
+          description: Optional name filter (supports partial matches, case-insensitive)
+          schema:
+            type: string
+            example: my-Supplier
+        - name: after_id
+          in: query
+          required: false
+          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+        - name: limit
+          in: query
+          required: false
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+        - name: sort_by
+          in: query
+          required: false
+          description: Field to sort by (name, description)
+          schema:
+            type: string
+            default: name
+            example: name
+        - name: order
+          in: query
+          required: false
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+            example: asc
+      responses:
+        '200':
+          description: Successfully retrieved Suppliers
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - limit
+                  - has_more
+                  - next_cursor
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Supplier'
+                  limit:
+                    type: integer
+                    example: 10
+                  has_more:
+                    type: boolean
+                    example: true
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    pattern: '^[0-9a-fA-F]{24}$'
+                    example: 507f1f77bcf86cd799439011
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/Inventory:
+    get:
+      tags:
+        - Inventory
+      summary: Get all Inventory documents
+      description: Retrieve infinite scroll batch of sorted, filtered Inventory documents (read-only)
+      operationId: getInventorys
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Optional name filter (supports partial matches, case-insensitive)
+          schema:
+            type: string
+            example: my-Inventory
+        - name: after_id
+          in: query
+          required: false
+          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+        - name: limit
+          in: query
+          required: false
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+        - name: sort_by
+          in: query
+          required: false
+          description: Field to sort by (name, description)
+          schema:
+            type: string
+            default: name
+            example: name
+        - name: order
+          in: query
+          required: false
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+            example: asc
+      responses:
+        '200':
+          description: Successfully retrieved Inventorys
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - limit
+                  - has_more
+                  - next_cursor
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Inventory'
+                  limit:
+                    type: integer
+                    example: 10
+                  has_more:
+                    type: boolean
+                    example: true
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    pattern: '^[0-9a-fA-F]{24}$'
+                    example: 507f1f77bcf86cd799439011
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/Shipment:
+    get:
+      tags:
+        - Shipment
+      summary: Get all Shipment documents
+      description: Retrieve infinite scroll batch of sorted, filtered Shipment documents (read-only)
+      operationId: getShipments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Optional name filter (supports partial matches, case-insensitive)
+          schema:
+            type: string
+            example: my-Shipment
+        - name: after_id
+          in: query
+          required: false
+          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+        - name: limit
+          in: query
+          required: false
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+        - name: sort_by
+          in: query
+          required: false
+          description: Field to sort by (name, description)
+          schema:
+            type: string
+            default: name
+            example: name
+        - name: order
+          in: query
+          required: false
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+            example: asc
+      responses:
+        '200':
+          description: Successfully retrieved Shipments
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - limit
+                  - has_more
+                  - next_cursor
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Shipment'
+                  limit:
+                    type: integer
+                    example: 10
+                  has_more:
+                    type: boolean
+                    example: true
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    pattern: '^[0-9a-fA-F]{24}$'
+                    example: 507f1f77bcf86cd799439011
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/Optimization:
+    get:
+      tags:
+        - Optimization
+      summary: Get all Optimization documents
+      description: Retrieve infinite scroll batch of sorted, filtered Optimization documents (read-only)
+      operationId: getOptimizations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: Optional name filter (supports partial matches, case-insensitive)
+          schema:
+            type: string
+            example: my-Optimization
+        - name: after_id
+          in: query
+          required: false
+          description: Cursor for infinite scroll (ID of last item from previous batch, omit for first request)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+        - name: limit
+          in: query
+          required: false
+          description: Items per page (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+            example: 10
+        - name: sort_by
+          in: query
+          required: false
+          description: Field to sort by (name, description)
+          schema:
+            type: string
+            default: name
+            example: name
+        - name: order
+          in: query
+          required: false
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+            example: asc
+      responses:
+        '200':
+          description: Successfully retrieved Optimizations
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - limit
+                  - has_more
+                  - next_cursor
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Optimization'
+                  limit:
+                    type: integer
+                    example: 10
+                  has_more:
+                    type: boolean
+                    example: true
+                  next_cursor:
+                    type: string
+                    nullable: true
+                    pattern: '^[0-9a-fA-F]{24}$'
+                    example: 507f1f77bcf86cd799439011
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/Organization/{OrganizationId}:
+    get:
+      tags:
+        - Organization
+      summary: Get Organization by OrganizationId
+      description: Retrieve a specific Organization document by its OrganizationId (read-only)
+      operationId: getOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: OrganizationId
           in: path
           required: true
-          description: The {{domain}} ID (MongoDB ObjectId)
+          description: The Organization ID (MongoDB ObjectId)
           schema:
             type: string
             pattern: '^[0-9a-fA-F]{24}$'
             example: 507f1f77bcf86cd799439011
       responses:
         '200':
-          description: Successfully retrieved {{domain}}
+          description: Successfully retrieved Organization
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/{{domain}}'
+                $ref: '#/components/schemas/Organization'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
-{% endfor -%}
-
+  /api/Supplier/{SupplierId}:
+    get:
+      tags:
+        - Supplier
+      summary: Get Supplier by SupplierId
+      description: Retrieve a specific Supplier document by its SupplierId (read-only)
+      operationId: getSupplier
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: SupplierId
+          in: path
+          required: true
+          description: The Supplier ID (MongoDB ObjectId)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Successfully retrieved Supplier
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supplier'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/Inventory/{InventoryId}:
+    get:
+      tags:
+        - Inventory
+      summary: Get Inventory by InventoryId
+      description: Retrieve a specific Inventory document by its InventoryId (read-only)
+      operationId: getInventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: InventoryId
+          in: path
+          required: true
+          description: The Inventory ID (MongoDB ObjectId)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Successfully retrieved Inventory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inventory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/Shipment/{ShipmentId}:
+    get:
+      tags:
+        - Shipment
+      summary: Get Shipment by ShipmentId
+      description: Retrieve a specific Shipment document by its ShipmentId (read-only)
+      operationId: getShipment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: ShipmentId
+          in: path
+          required: true
+          description: The Shipment ID (MongoDB ObjectId)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Successfully retrieved Shipment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/Optimization/{OptimizationId}:
+    get:
+      tags:
+        - Optimization
+      summary: Get Optimization by OptimizationId
+      description: Retrieve a specific Optimization document by its OptimizationId (read-only)
+      operationId: getOptimization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: OptimizationId
+          in: path
+          required: true
+          description: The Optimization ID (MongoDB ObjectId)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{24}$'
+            example: 507f1f77bcf86cd799439011
+      responses:
+        '200':
+          description: Successfully retrieved Optimization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Optimization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
 components:
   securitySchemes:
     bearerAuth:
@@ -716,11 +1015,9 @@ components:
           pattern: '^[^\s]{1,40}$'
           example: corr-abc123
 
-{% for domain in service.data_domains.controls -%}
-{{ '    ' -}}
-{{domain}}:
+    Analytics:
       type: object
-      description: {{domain}} domain document
+      description: Analytics domain document
       additionalProperties: false
       required:
         - _id
@@ -735,17 +1032,17 @@ components:
           example: 507f1f77bcf86cd799439011
         name:
           type: string
-          description: {{domain}} name
+          description: Analytics name
           pattern: '^[^\s]{1,40}$'
-          example: my-{{domain}}
+          example: my-Analytics
         description:
           type: string
-          description: {{domain}} description
+          description: Analytics description
           pattern: '^[^\t\n]{0,255}$'
-          example: A sample {{domain}} document
+          example: A sample Analytics document
         status:
           type: string
-          description: {{domain}} status
+          description: Analytics status
           enum:
             - active
             - archived
@@ -755,104 +1052,49 @@ components:
         saved:
           $ref: '#/components/schemas/Breadcrumb'
 
-    {{domain}}Input:
+    AnalyticsInput:
       type: object
-      description: Input for creating a {{domain}} document
+      description: Input for creating a Analytics document
       properties:
         name:
           type: string
-          description: {{domain}} name
+          description: Analytics name
           pattern: '^[^\s]{1,40}$'
-          example: my-{{domain}}
+          example: my-Analytics
         description:
           type: string
-          description: {{domain}} description
+          description: Analytics description
           pattern: '^[^\t\n]{0,255}$'
-          example: A sample {{domain}} document
+          example: A sample Analytics document
         status:
           type: string
-          description: {{domain}} status
+          description: Analytics status
           enum:
             - active
             - archived
           example: active
 
-    {{domain}}Update:
+    AnalyticsUpdate:
       type: object
-      description: Fields to update in a {{domain}} document (cannot include _id, created, saved)
+      description: Fields to update in a Analytics document (cannot include _id, created, saved)
       properties:
         name:
           type: string
-          description: {{domain}} name
+          description: Analytics name
           pattern: '^[^\s]{1,40}$'
         description:
           type: string
-          description: {{domain}} description
+          description: Analytics description
           pattern: '^[^\t\n]{0,255}$'
         status:
           type: string
-          description: {{domain}} status
+          description: Analytics status
           enum:
             - active
             - archived
-{% endfor -%}
-{% for domain in service.data_domains.creates -%}
-{{ '    ' -}}
-{{domain}}:
+    Organization:
       type: object
-      description: {{domain}} domain document
-      additionalProperties: false
-      required:
-        - _id
-        - name
-        - created
-      properties:
-        _id:
-          type: string
-          description: MongoDB document ID
-          pattern: '^[0-9a-fA-F]{24}$'
-          example: 507f1f77bcf86cd799439011
-        name:
-          type: string
-          description: {{domain}} name
-          pattern: '^[^\s]{1,40}$'
-          example: my-{{domain}}
-        description:
-          type: string
-          description: {{domain}} description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample {{domain}} document
-        status:
-          type: string
-          description: {{domain}} status
-          example: active
-        created:
-          $ref: '#/components/schemas/Breadcrumb'
-
-    {{domain}}Input:
-      type: object
-      description: Input for creating a {{domain}} document
-      properties:
-        name:
-          type: string
-          description: {{domain}} name
-          pattern: '^[^\s]{1,40}$'
-          example: my-{{domain}}
-        description:
-          type: string
-          description: {{domain}} description
-          pattern: '^[^\t\n]{0,255}$'
-          example: A sample {{domain}} document
-        status:
-          type: string
-          description: {{domain}} status
-          example: active
-{% endfor -%}
-{% for domain in service.data_domains.consumes -%}
-{{ '    ' -}}
-{{domain}}:
-      type: object
-      description: {{domain}} domain document (read-only)
+      description: Organization domain document (read-only)
       additionalProperties: false
       required:
         - _id
@@ -865,21 +1107,127 @@ components:
           example: 507f1f77bcf86cd799439011
         name:
           type: string
-          description: {{domain}} name
+          description: Organization name
           pattern: '^[^\s]{1,40}$'
-          example: my-{{domain}}
+          example: my-Organization
         description:
           type: string
-          description: {{domain}} description
+          description: Organization description
           pattern: '^[^\t\n]{0,255}$'
-          example: A sample {{domain}} document
+          example: A sample Organization document
         status:
           type: string
-          description: {{domain}} status
+          description: Organization status
           example: active
-{% endfor -%}
-{{ '    ' -}}
-InfiniteScrollResponse:
+    Supplier:
+      type: object
+      description: Supplier domain document (read-only)
+      additionalProperties: false
+      required:
+        - _id
+        - name
+      properties:
+        _id:
+          type: string
+          description: MongoDB document ID
+          pattern: '^[0-9a-fA-F]{24}$'
+          example: 507f1f77bcf86cd799439011
+        name:
+          type: string
+          description: Supplier name
+          pattern: '^[^\s]{1,40}$'
+          example: my-Supplier
+        description:
+          type: string
+          description: Supplier description
+          pattern: '^[^\t\n]{0,255}$'
+          example: A sample Supplier document
+        status:
+          type: string
+          description: Supplier status
+          example: active
+    Inventory:
+      type: object
+      description: Inventory domain document (read-only)
+      additionalProperties: false
+      required:
+        - _id
+        - name
+      properties:
+        _id:
+          type: string
+          description: MongoDB document ID
+          pattern: '^[0-9a-fA-F]{24}$'
+          example: 507f1f77bcf86cd799439011
+        name:
+          type: string
+          description: Inventory name
+          pattern: '^[^\s]{1,40}$'
+          example: my-Inventory
+        description:
+          type: string
+          description: Inventory description
+          pattern: '^[^\t\n]{0,255}$'
+          example: A sample Inventory document
+        status:
+          type: string
+          description: Inventory status
+          example: active
+    Shipment:
+      type: object
+      description: Shipment domain document (read-only)
+      additionalProperties: false
+      required:
+        - _id
+        - name
+      properties:
+        _id:
+          type: string
+          description: MongoDB document ID
+          pattern: '^[0-9a-fA-F]{24}$'
+          example: 507f1f77bcf86cd799439011
+        name:
+          type: string
+          description: Shipment name
+          pattern: '^[^\s]{1,40}$'
+          example: my-Shipment
+        description:
+          type: string
+          description: Shipment description
+          pattern: '^[^\t\n]{0,255}$'
+          example: A sample Shipment document
+        status:
+          type: string
+          description: Shipment status
+          example: active
+    Optimization:
+      type: object
+      description: Optimization domain document (read-only)
+      additionalProperties: false
+      required:
+        - _id
+        - name
+      properties:
+        _id:
+          type: string
+          description: MongoDB document ID
+          pattern: '^[0-9a-fA-F]{24}$'
+          example: 507f1f77bcf86cd799439011
+        name:
+          type: string
+          description: Optimization name
+          pattern: '^[^\s]{1,40}$'
+          example: my-Optimization
+        description:
+          type: string
+          description: Optimization description
+          pattern: '^[^\t\n]{0,255}$'
+          example: A sample Optimization document
+        status:
+          type: string
+          description: Optimization status
+          example: active
+    InfiniteScrollResponse:
       type: object
       description: Infinite scroll pagination response
       required:

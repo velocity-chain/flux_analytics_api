@@ -35,45 +35,35 @@ from api_utils import (
     create_config_routes,
     create_explorer_routes
 )
-{% for item in service.data_domains.controls -%}
-from src.routes.{{item | lower}}_routes import create_{{item | lower}}_routes
-{% endfor -%}
-{% for item in service.data_domains.creates -%}
-from src.routes.{{item | lower}}_routes import create_{{item | lower}}_routes
-{% endfor -%}
-{% for item in service.data_domains.consumes -%}
-from src.routes.{{item | lower}}_routes import create_{{item | lower}}_routes
-{% endfor -%}
-
+from src.routes.analytics_routes import create_analytics_routes
+from src.routes.organization_routes import create_organization_routes
+from src.routes.supplier_routes import create_supplier_routes
+from src.routes.inventory_routes import create_inventory_routes
+from src.routes.shipment_routes import create_shipment_routes
+from src.routes.optimization_routes import create_optimization_routes
 # Register route blueprints
 # Register explorer routes with template's docs directory
 docs_dir = os.path.join(os.path.dirname(__file__), '..', 'docs')
 app.register_blueprint(create_explorer_routes(docs_dir), url_prefix='/docs')
 app.register_blueprint(create_config_routes(), url_prefix='/api/config')
 app.register_blueprint(create_dev_login_routes(), url_prefix='/dev-login')
-{% for item in service.data_domains.controls -%}
-app.register_blueprint(create_{{item | lower}}_routes(), url_prefix='/api/{{item | lower}}')
-{% endfor -%}
-{% for item in service.data_domains.creates -%}
-app.register_blueprint(create_{{item | lower}}_routes(), url_prefix='/api/{{item | lower}}')
-{% endfor -%}
-{% for item in service.data_domains.consumes -%}
-app.register_blueprint(create_{{item | lower}}_routes(), url_prefix='/api/{{item | lower}}')
-{% endfor -%}
+app.register_blueprint(create_analytics_routes(), url_prefix='/api/analytics')
+app.register_blueprint(create_organization_routes(), url_prefix='/api/organization')
+app.register_blueprint(create_supplier_routes(), url_prefix='/api/supplier')
+app.register_blueprint(create_inventory_routes(), url_prefix='/api/inventory')
+app.register_blueprint(create_shipment_routes(), url_prefix='/api/shipment')
+app.register_blueprint(create_optimization_routes(), url_prefix='/api/optimization')
 metrics = create_metric_routes(app)  # This exposes /metrics endpoint
 
 logger.info("============= Routes Registered ===============")
 logger.info("  /api/config - Configuration endpoint")
 logger.info("  /dev-login - Dev Login (returns 404 if disabled)")
-{% for item in service.data_domains.controls -%}
-logger.info("  /api/{{item | lower}} - {{item}} domain endpoints")
-{% endfor -%}
-{% for item in service.data_domains.creates -%}
-logger.info("  /api/{{item | lower}} - {{item}} domain endpoints")
-{% endfor -%}
-{% for item in service.data_domains.consumes -%}
-logger.info("  /api/{{item | lower}} - {{item}} domain endpoints")
-{% endfor -%}
+logger.info("  /api/analytics - Analytics domain endpoints")
+logger.info("  /api/organization - Organization domain endpoints")
+logger.info("  /api/supplier - Supplier domain endpoints")
+logger.info("  /api/inventory - Inventory domain endpoints")
+logger.info("  /api/shipment - Shipment domain endpoints")
+logger.info("  /api/optimization - Optimization domain endpoints")
 logger.info("  /docs - API Explorer")
 logger.info("  /metrics - Prometheus metrics endpoint")
 
@@ -100,6 +90,6 @@ signal.signal(signal.SIGINT, handle_exit)
 
 # Expose app for Gunicorn or direct execution
 if __name__ == "__main__":
-    api_port = config.{{ (repo.name | upper | replace("-", "_")) }}_PORT
+    api_port = config.ANALYTICS_API_PORT
     logger.info(f"Starting Flask server on port {api_port}")
     app.run(host="0.0.0.0", port=api_port, debug=False)
